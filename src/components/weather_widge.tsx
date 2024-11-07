@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardContent,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CloudIcon, MapPinIcon, ThermometerIcon } from "lucide-react";
@@ -21,10 +27,10 @@ export default function WeatherWidget() {
 
     const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
+        
         const trimmedLocation = location.trim();
-        if (trimmedLocation === "") {
-            setError("Please Enter a Valid Location.");
+        if (!trimmedLocation) {
+            setError("Please enter a valid location.");
             setWeather(null);
             return;
         }
@@ -34,11 +40,13 @@ export default function WeatherWidget() {
 
         try {
             const response = await fetch(
-                `https://api.weatherapi.com/v1/current.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=${trimmedLocation}`
+                `https://api.weatherapi.com/v1/current.json?key=${process.env.NEXT_PUBLIC_WEATHER_API_KEY}&q=${encodeURIComponent(trimmedLocation)}`
             );
+
             if (!response.ok) {
                 throw new Error("City not found.");
             }
+
             const data = await response.json();
             const weatherData: WeatherData = {
                 temperature: data.current.temp_c,
@@ -46,6 +54,7 @@ export default function WeatherWidget() {
                 location: data.location.name,
                 unit: "C",
             };
+
             setWeather(weatherData);
         } catch (error) {
             setError("City not found. Please try again.");
@@ -55,41 +64,42 @@ export default function WeatherWidget() {
         }
     };
 
-    function getTemperatureMessage(temperature: number, unit: string): string {
+    function getTemperatureMessage(temp: number, unit: string): string {
         if (unit === "C") {
-            if (temperature < 0) return `It's freezing at ${temperature}°C! Bundle up!`;
-            if (temperature < 10) return `It's quite cold at ${temperature}°C. Wear warm clothes.`;
-            if (temperature < 20) return `The temperature is ${temperature}°C. Comfortable for a light jacket.`;
-            if (temperature < 30) return `It's a pleasant ${temperature}°C. Enjoy the nice weather!`;
-            return `It's hot at ${temperature}°C. Stay hydrated!`;
+            if (temp < 0) return `It's freezing at ${temp}°C! Bundle up!`;
+            if (temp < 10) return `It's quite cold at ${temp}°C. Wear warm clothes.`;
+            if (temp < 20) return `The temperature is ${temp}°C. Comfortable for a light jacket.`;
+            if (temp < 30) return `It's a pleasant ${temp}°C. Enjoy the nice weather!`;
+            return `It's hot at ${temp}°C. Stay hydrated!`;
         }
-        return `${temperature}°${unit}`;
+        return `${temp}°${unit}`;
     }
 
     function getWeatherMessage(description: string): string {
-        switch (description.toLowerCase()) {
-            case "sunny": return "It's a beautiful sunny day!";
-            case "partly cloudy": return "Expect some clouds and sunshine.";
-            case "cloudy": return "It's cloudy today.";
-            case "overcast": return "The sky is overcast.";
-            case "rain": return "Don't forget your umbrella! It's raining.";
-            case "thunderstorm": return "Thunderstorms are expected today.";
-            case "snow": return "Bundle up! It's snowing.";
-            case "mist": return "It's misty outside.";
-            case "fog": return "Be careful, there's fog outside.";
-            default: return description;
-        }
+        const messages: { [key: string]: string } = {
+            sunny: "It's a beautiful sunny day!",
+            "partly cloudy": "Expect some clouds and sunshine.",
+            cloudy: "It's cloudy today.",
+            overcast: "The sky is overcast.",
+            rain: "Don't forget your umbrella! It's raining.",
+            thunderstorm: "Thunderstorms are expected today.",
+            snow: "Bundle up! It's snowing.",
+            mist: "It's misty outside.",
+            fog: "Be careful, there's fog outside.",
+        };
+
+        return messages[description.toLowerCase()] || description;
     }
 
-    function getLocationMessage(location: string): string {
-        const currentHour = new Date().getHours();
-        const isNight = currentHour >= 18 || currentHour < 6;
-        return `${location} ${isNight ? "at Night" : "During the Day"}`;
+    function getLocationMessage(city: string): string {
+        const hour = new Date().getHours();
+        const isNight = hour >= 18 || hour < 6;
+        return `${city} ${isNight ? "at Night" : "During the Day"}`;
     }
 
     return (
         <div className="flex justify-center items-center h-screen bg-gradient-to-b from-blue-300 to-blue-100">
-            <Card className="w-full max-w-md mx-auto text-center shadow-lg rounded-lg bg-white transform transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
+            <Card className="w-full max-w-md mx-auto text-center shadow-lg rounded-lg bg-white transition-transform duration-300 hover:scale-105 hover:shadow-2xl">
                 <CardHeader>
                     <CardTitle className="text-2xl font-semibold text-gray-800">Weather Widget</CardTitle>
                     <CardDescription className="text-gray-600">Search for the current weather conditions in your city.</CardDescription>
